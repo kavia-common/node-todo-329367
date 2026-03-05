@@ -17,6 +17,11 @@
 		body 					{ padding-top:50px; }
 		#todo-list 				{ margin-bottom:30px; }
 		#todo-form 	 			{ margin-bottom:50px; }
+		.todo-completed			{ text-decoration: line-through; color: #999; }
+		.todo-row				{ display:flex; align-items:center; justify-content:space-between; }
+		.todo-row label			{ font-weight: normal; margin: 0; flex: 1; }
+		.todo-row .todo-actions { margin-left: 10px; }
+		.filter-bar				{ margin-bottom: 15px; }
 	</style>
 
 	<!-- SPELLS -->
@@ -38,15 +43,94 @@
 
 		<!-- TODO LIST -->
 		<div id="todo-list" class="row">
-			<div class="col-sm-4 col-sm-offset-4">
+			<div class="col-sm-6 col-sm-offset-3">
 
-				
+				<!-- FILTERS -->
+				<div class="text-center filter-bar">
+					<div class="btn-group">
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'all' }"
+								ng-click="setFilter('all')">
+							All
+						</button>
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'active' }"
+								ng-click="setFilter('active')">
+							Active
+						</button>
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'completed' }"
+								ng-click="setFilter('completed')">
+							Completed
+						</button>
+					</div>
+				</div>
 
 				<!-- LOOP OVER THE TODOS IN $scope.todos -->
-				<div class="checkbox" ng-repeat="todo in todos">
-					<label>
-						<input type="checkbox" ng-click="deleteTodo(todo._id)"> {{ todo.text }}
-					</label>
+				<div class="checkbox" ng-repeat="todo in todos | filter:todoMatchesFilter track by todo._id">
+					<div class="todo-row">
+						<!-- Normal (non-editing) view -->
+						<label ng-hide="editingTodoId === todo._id">
+							<input type="checkbox"
+								   ng-checked="todo.done"
+								   ng-click="toggleDone(todo)">
+							<span ng-class="{ 'todo-completed': todo.done }">{{ todo.text }}</span>
+						</label>
+
+						<!-- Editing view -->
+						<div class="form-inline" ng-show="editingTodoId === todo._id" style="flex: 1;">
+							<div class="form-group" style="width: 100%;">
+								<input type="text"
+									   class="form-control input-sm"
+									   style="width: 100%;"
+									   ng-model="editTextDraft"
+									   ng-keydown="$event.keyCode === 13 && saveEditTodo(todo); $event.keyCode === 27 && cancelEditTodo();"
+									   aria-label="Edit todo text">
+							</div>
+						</div>
+
+						<div class="todo-actions">
+							<!-- Edit button -->
+							<button type="button"
+									class="btn btn-xs btn-default"
+									ng-hide="editingTodoId === todo._id"
+									aria-label="Edit todo"
+									title="Edit"
+									ng-click="startEditTodo(todo)">
+								<span class="fa fa-pencil"></span>
+							</button>
+
+							<!-- Save/Cancel buttons -->
+							<button type="button"
+									class="btn btn-xs btn-success"
+									ng-show="editingTodoId === todo._id"
+									aria-label="Save todo"
+									title="Save"
+									ng-click="saveEditTodo(todo)">
+								<span class="fa fa-check"></span>
+							</button>
+							<button type="button"
+									class="btn btn-xs btn-warning"
+									ng-show="editingTodoId === todo._id"
+									aria-label="Cancel edit"
+									title="Cancel"
+									ng-click="cancelEditTodo()">
+								<span class="fa fa-times"></span>
+							</button>
+
+							<!-- Delete button -->
+							<button type="button"
+									class="btn btn-xs btn-danger"
+									aria-label="Delete todo"
+									title="Delete"
+									ng-click="deleteTodo(todo._id)">
+								<span class="fa fa-trash"></span>
+							</button>
+						</div>
+					</div>
 				</div>
 
 				<p class="text-center" ng-show="loading">
