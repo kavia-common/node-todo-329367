@@ -17,6 +17,11 @@
 		body 					{ padding-top:50px; }
 		#todo-list 				{ margin-bottom:30px; }
 		#todo-form 	 			{ margin-bottom:50px; }
+		.todo-completed			{ text-decoration: line-through; color: #999; }
+		.todo-row				{ display:flex; align-items:center; justify-content:space-between; }
+		.todo-row label			{ font-weight: normal; margin: 0; flex: 1; }
+		.todo-row .todo-actions { margin-left: 10px; }
+		.filter-bar				{ margin-bottom: 15px; }
 	</style>
 
 	<!-- SPELLS -->
@@ -38,15 +43,52 @@
 
 		<!-- TODO LIST -->
 		<div id="todo-list" class="row">
-			<div class="col-sm-4 col-sm-offset-4">
+			<div class="col-sm-6 col-sm-offset-3">
 
-				
+				<!-- FILTERS -->
+				<div class="text-center filter-bar">
+					<div class="btn-group">
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'all' }"
+								ng-click="setFilter('all')">
+							All
+						</button>
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'active' }"
+								ng-click="setFilter('active')">
+							Active
+						</button>
+						<button type="button"
+								class="btn btn-default"
+								ng-class="{ active: filterState === 'completed' }"
+								ng-click="setFilter('completed')">
+							Completed
+						</button>
+					</div>
+				</div>
 
 				<!-- LOOP OVER THE TODOS IN $scope.todos -->
-				<div class="checkbox" ng-repeat="todo in todos">
-					<label>
-						<input type="checkbox" ng-click="deleteTodo(todo._id)"> {{ todo.text }}
-					</label>
+				<div class="checkbox" ng-repeat="todo in todos | filter:todoMatchesFilter track by todo._id">
+					<div class="todo-row">
+						<label>
+							<input type="checkbox"
+								   ng-checked="todo.done"
+								   ng-click="toggleDone(todo)">
+							<span ng-class="{ 'todo-completed': todo.done }">{{ todo.text }}</span>
+						</label>
+
+						<div class="todo-actions">
+							<button type="button"
+									class="btn btn-xs btn-danger"
+									aria-label="Delete todo"
+									title="Delete"
+									ng-click="deleteTodo(todo._id)">
+								<span class="fa fa-trash"></span>
+							</button>
+						</div>
+					</div>
 				</div>
 
 				<p class="text-center" ng-show="loading">

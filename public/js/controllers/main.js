@@ -5,6 +5,23 @@ angular.module('todoController', [])
 		$scope.formData = {};
 		$scope.loading = true;
 
+		// Current filter: 'all' | 'active' | 'completed'
+		$scope.filterState = 'all';
+
+		// PUBLIC_INTERFACE
+		$scope.setFilter = function(state) {
+			/** Set the current UI filter (all/active/completed). */
+			$scope.filterState = state;
+		};
+
+		// PUBLIC_INTERFACE
+		$scope.todoMatchesFilter = function(todo) {
+			/** Return true if a todo should be displayed under the current filter. */
+			if ($scope.filterState === 'active') return !todo.done;
+			if ($scope.filterState === 'completed') return !!todo.done;
+			return true; // all
+		};
+
 		// GET =====================================================================
 		// when landing on the page, get all todos and show them
 		// use the service to get all the todos
@@ -35,8 +52,24 @@ angular.module('todoController', [])
 			}
 		};
 
+		// UPDATE (toggle done) =====================================================
+		// PUBLIC_INTERFACE
+		$scope.toggleDone = function(todo) {
+			/**
+			 * Toggle completion status for a todo.
+			 * Note: we update via API and reassign the returned list, matching existing patterns.
+			 */
+			$scope.loading = true;
+
+			Todos.update(todo._id, { done: !todo.done })
+				.success(function(data) {
+					$scope.loading = false;
+					$scope.todos = data;
+				});
+		};
+
 		// DELETE ==================================================================
-		// delete a todo after checking it
+		// delete a todo (kept for backward compatibility; now triggered via a trash icon in UI)
 		$scope.deleteTodo = function(id) {
 			$scope.loading = true;
 

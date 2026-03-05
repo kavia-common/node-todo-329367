@@ -12,6 +12,21 @@ function getTodos(res) {
     });
 };
 
+// PUBLIC_INTERFACE
+function coerceOptionalBoolean(value) {
+    /**
+     * Coerce incoming values into a boolean when they are provided.
+     * Returns `undefined` when the value is not present, so callers can decide whether to update.
+     */
+    if (value === undefined) return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        if (value.toLowerCase() === 'true') return true;
+        if (value.toLowerCase() === 'false') return false;
+    }
+    return Boolean(value);
+};
+
 module.exports = function (app) {
 
     // api ---------------------------------------------------------------------
@@ -36,6 +51,39 @@ module.exports = function (app) {
             getTodos(res);
         });
 
+    });
+
+    // update a todo (supports toggling done and/or editing text)
+    app.put('/api/todos/:todo_id', function (req, res) {
+        var update = {};
+
+        if (req.body && req.body.text !== undefined) {
+            update.text = req.body.text;
+        }
+
+        var done = req.body ? coerceOptionalBoolean(req.body.done) : undefined;
+        if (done !== undefined) {
+            update.done = done;
+        }
+
+        // If nothing to update, just return the list to keep behavior predictable for the UI.
+        if (Object.keys(update).length === 0) {
+            return getTodos(res);
+        }
+
+        Todo.findByIdAndUpdate(
+            req.params.todo_id,
+            update,
+            { new: true },
+            function (err, todo) {
+                if (err) {
+                    return res.send(err);
+                }
+
+                // return all todos for existing frontend pattern
+                getTodos(res);
+            }
+        );
     });
 
     // delete a todo
