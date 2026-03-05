@@ -8,6 +8,10 @@ angular.module('todoController', [])
 		// Current filter: 'all' | 'active' | 'completed'
 		$scope.filterState = 'all';
 
+		// Edit state (single active edit at a time to keep UI simple and predictable)
+		$scope.editingTodoId = null;
+		$scope.editTextDraft = '';
+
 		// PUBLIC_INTERFACE
 		$scope.setFilter = function(state) {
 			/** Set the current UI filter (all/active/completed). */
@@ -65,6 +69,65 @@ angular.module('todoController', [])
 				.success(function(data) {
 					$scope.loading = false;
 					$scope.todos = data;
+				});
+		};
+
+		// EDIT TEXT FLOW ==========================================================
+		// PUBLIC_INTERFACE
+		$scope.startEditTodo = function(todo) {
+			/**
+			 * Enter edit mode for a todo.
+			 * Contract:
+			 * - Inputs: todo object with {_id, text}
+			 * - Side effects: updates controller edit state only
+			 */
+			$scope.editingTodoId = todo._id;
+			$scope.editTextDraft = todo.text || '';
+		};
+
+		// PUBLIC_INTERFACE
+		$scope.cancelEditTodo = function() {
+			/**
+			 * Exit edit mode without persisting changes.
+			 */
+			$scope.editingTodoId = null;
+			$scope.editTextDraft = '';
+		};
+
+		// PUBLIC_INTERFACE
+		$scope.saveEditTodo = function(todo) {
+			/**
+			 * Persist edited text for a todo.
+			 * Flow name: EditTodoTextFlow
+			 *
+			 * Contract:
+			 * - Inputs: todo object with {_id, text}; uses $scope.editTextDraft as the proposed new text
+			 * - Validation: trimmed text must be non-empty; if unchanged, no API call is made
+			 * - Side effects: PUT to API; refreshes $scope.todos from returned data; exits edit mode on success
+			 * - Errors: surfaced via console for debuggability; loading spinner is reset
+			 */
+			var trimmed = ($scope.editTextDraft || '').trim();
+			if (!trimmed) {
+				// Keep behavior simple: disallow empty edits.
+				return;
+			}
+
+			// No-op if unchanged.
+			if (trimmed === (todo.text || '')) {
+				return $scope.cancelEditTodo();
+			}
+
+			$scope.loading = true;
+			Todos.editTodoText(todo._id, trimmed)
+				.success(function(data) {
+					$scope.loading = false;
+					$scope.todos = data;
+					$scope.cancelEditTodo();
+				})
+				.error(function(err) {
+					$scope.loading = false;
+					// Provide context to debug API failures without swallowing the error.
+					console.error('EditTodoTextFlow failed for todo_id=' + todo._id, err);
 				});
 		};
 
